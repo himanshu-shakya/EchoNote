@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1026828191377",
+    "project_id": "echonote-4c428",
+    "storage_bucket": "echonote-4c428.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1026828191377:android:a266e8c2db2eeac97ae130",
+        "android_client_info": {
+          "package_name": "com.example.echonote"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAE2oYddY3meHvaehtgkbBliI6_WCTJyzI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
