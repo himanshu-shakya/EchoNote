@@ -64,11 +64,10 @@ fun CreateAccountScreen(authViewModel: AuthViewModel, navController: NavHostCont
     val emailError by authViewModel.createAccountEmailError.collectAsState()
     val passwordError by authViewModel.createAccountPasswordError.collectAsState()
     val nameError by authViewModel.createAccountNameError.collectAsState()
-    var isTextFieldEnabled by remember{mutableStateOf(false)}
+    var isTextFieldEnabled by remember{mutableStateOf(true)}
 
     val snackBarState by remember { mutableStateOf(SnackbarHostState())}
-    val buttonEnabled =
-        emailError.isEmpty() && passwordError.isEmpty() && nameError.isEmpty() && email.isNotEmpty() && password.isNotEmpty() && name.isNotEmpty()
+    val buttonEnabled = emailError.isEmpty() && passwordError.isEmpty() && nameError.isEmpty() && email.isNotEmpty() && password.isNotEmpty() && name.isNotEmpty()
     LaunchedEffect(true){
         authViewModel.createAccount.collectLatest {state->
             when(state){

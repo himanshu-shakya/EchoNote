@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -55,6 +58,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -62,6 +66,7 @@ import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.echonote.R
 import com.example.echonote.core.utils.ButtonState
+import com.example.echonote.domain.model.User
 import com.example.echonote.ui.theme.DarkGray
 import com.example.echonote.ui.theme.LightBlack
 import com.example.echonote.ui.theme.Lighter
@@ -81,8 +86,8 @@ fun EchoNoteTextField(
     shape: RoundedCornerShape = RoundedCornerShape(5.dp),
     keyboardType: KeyboardType,
     errorText: String,
-    isEnabled: Boolean
-    ) {
+    isEnabled: Boolean,
+) {
     var visible by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -96,7 +101,7 @@ fun EchoNoteTextField(
         )
         OutlinedTextField(
             modifier = modifier.fillMaxWidth(),
-            singleLine =true,
+            singleLine = true,
             readOnly = !isEnabled,
             supportingText = {
                 Text(
@@ -414,7 +419,7 @@ fun EchoNoteColorButton(
     modifier: Modifier = Modifier,
     color: Color,
     onClick: () -> Unit,
-    clicked:Boolean
+    clicked: Boolean,
 ) {
     IconButton(
         modifier = Modifier.border(
@@ -458,6 +463,7 @@ fun HighlightedTextField() {
 
 
 }
+
 @Composable
 fun EchoNoteLoading(modifier: Modifier = Modifier) {
     val isPlaying by remember {
@@ -502,6 +508,66 @@ fun EchoNoteLoading(modifier: Modifier = Modifier) {
         progress,
         modifier = modifier.size(45.dp)
     )
+}
+
+@Composable
+fun UserCard(modifier: Modifier = Modifier, user: User) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (user.avatar.isNotEmpty()) {
+            AsyncImage(
+                model = user.avatar,
+                contentDescription = "avtar",
+                modifier = Modifier.size(150.dp),
+                contentScale = ContentScale.FillBounds
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(160.dp)
+                    .background(Color.Transparent, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(150.dp)
+                        .background(LightBlack, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "avatar",
+                        tint = RichBlue,
+                        modifier = Modifier.size(100.dp)
+                    )
+                }
+            }
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Text(
+                text = user.name,
+                fontSize = 20.sp,
+                color = Lighter,
+                fontFamily = PoppinsFamily,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = user.email,
+                fontSize = 15.sp,
+                color = Lighter.copy(alpha = 0.5f),
+                fontFamily = PoppinsFamily
+            )
+        }
+
+    }
 }
 
 

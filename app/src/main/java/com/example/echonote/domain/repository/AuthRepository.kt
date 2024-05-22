@@ -9,4 +9,7 @@ interface AuthRepository {
     suspend fun createAccount(userName:String,email: String,password: String):Flow<Result<Boolean>>
     suspend fun forgotPassword(email: String):Flow<Result<Boolean>>
     suspend fun storeUser(user: User,userId:String):Flow<Result<Boolean>>
+    suspend fun getUser():Flow<Result<User>>
+    suspend fun logout(): Flow<Result<Boolean>>
+    suspend fun deleteAccount(email :String , password: String): Flow<Result<Boolean>>
 }

@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -195,6 +196,11 @@ fun CreateNotesScreen(
             }
         }
     }
+    BackHandler(onBack = {
+        notesViewModel.resetCreateNoteScreenState(true)
+        navController.navigateUp()
+    })
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(hostState = snackBarSate) },
@@ -204,6 +210,7 @@ fun CreateNotesScreen(
                 title = { },
                 navigationIcon = {
                     IconButton(onClick = {
+                        notesViewModel.resetCreateNoteScreenState(true)
                         navController.navigateUp()
                     }) {
 

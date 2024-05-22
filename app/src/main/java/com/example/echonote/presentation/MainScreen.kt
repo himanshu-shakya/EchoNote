@@ -15,8 +15,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.DrawerValue
@@ -24,10 +22,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -46,9 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -57,17 +51,20 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.echonote.R
 import com.example.echonote.core.navigation.NavConstants
-import com.example.echonote.core.navigation.NavigationItem
 import com.example.echonote.core.ui_componantes.EchoNoteLoading
 import com.example.echonote.core.ui_componantes.bounceClick
 import com.example.echonote.core.utils.UiState
 import com.example.echonote.domain.model.Notes
+import com.example.echonote.domain.model.User
+import com.example.echonote.domain.utils.AuthAction
 import com.example.echonote.domain.utils.NotesAction
+import com.example.echonote.presentation.viewModel.AuthViewModel
 import com.example.echonote.presentation.viewModel.NotesViewModel
 import com.example.echonote.ui.theme.ArchitectsFamily
 import com.example.echonote.ui.theme.DarkBackground
@@ -78,12 +75,16 @@ import com.example.echonote.ui.theme.PoppinsFamily
 import com.example.echonote.ui.theme.RichBlue
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import com.mohamedrejeb.richeditor.ui.material3.RichText
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(navController: NavHostController, notesViewModel: NotesViewModel) {
-    val snackbarHostState = remember { SnackbarHostState() }
+fun MainScreen(
+    navController: NavHostController,
+    notesViewModel: NotesViewModel,
+    authViewModel: AuthViewModel,
+) {
+    val snackBarHostState = remember { SnackbarHostState() }
+    var user by remember { mutableStateOf(User()) }
     val searchText by notesViewModel.searchQuery.collectAsState()
     var notes by remember { mutableStateOf(emptyList<Notes>()) }
     var isLoading by remember { mutableStateOf(false) }
@@ -93,25 +94,6 @@ fun MainScreen(navController: NavHostController, notesViewModel: NotesViewModel)
         mutableStateOf(false)
     }
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.empty_state))
-    val showSidedBar by remember{ mutableStateOf(false)}
-    val navigationItems = listOf(
-        NavigationItem(
-            "Home",
-            Icons.Default.Home,
-            Icons.Default.Home,
-        ),
-        NavigationItem(
-            "Profile",
-            Icons.Default.Person,
-            Icons.Default.Person,
-        ),
-        NavigationItem(
-            "Bookmark",
-            ImageVector.vectorResource(id = R.drawable.ic_bookmarked),
-            ImageVector.vectorResource(id = R.drawable.ic_bookmarked),
-        )
-    )
-    var selectedItemIndex by remember{mutableStateOf(0)}
     var isDeleting by remember {
         mutableStateOf(false)
     }
@@ -120,12 +102,13 @@ fun MainScreen(navController: NavHostController, notesViewModel: NotesViewModel)
     val scope = rememberCoroutineScope()
     LaunchedEffect(true) {
         notesViewModel.onEvent(NotesAction.FetchNotes)
+        authViewModel.onEvent(AuthAction.GetUser)
     }
     LaunchedEffect(true) {
         notesViewModel.fetchNotesFlow.collect { state ->
             when (state) {
                 is UiState.Error -> {
-                    snackbarHostState.showSnackbar(message = state.message)
+                    snackBarHostState.showSnackbar(message = state.message)
                     isLoading = false
                 }
 
@@ -147,7 +130,7 @@ fun MainScreen(navController: NavHostController, notesViewModel: NotesViewModel)
             when (state) {
                 is UiState.Error -> {
                     isDeleting = false
-                    snackbarHostState.showSnackbar(message = state.message)
+                    snackBarHostState.showSnackbar(message = state.message)
 
                 }
 
@@ -160,9 +143,8 @@ fun MainScreen(navController: NavHostController, notesViewModel: NotesViewModel)
                 }
 
                 is UiState.Success -> {
-                    notesViewModel.onEvent(NotesAction.FetchNotes)
                     isDeleting = false
-                    snackbarHostState.showSnackbar(message = "Note Deleted")
+                    snackBarHostState.showSnackbar(message = "Note Deleted")
                 }
             }
 
@@ -172,7 +154,7 @@ fun MainScreen(navController: NavHostController, notesViewModel: NotesViewModel)
         notesViewModel.bookmarkNoteFlow.collect { state ->
             when (state) {
                 is UiState.Error -> {
-                    snackbarHostState.showSnackbar(message = state.message)
+                    snackBarHostState.showSnackbar(message = state.message)
                     isBookmarking = false
                 }
 
@@ -182,13 +164,29 @@ fun MainScreen(navController: NavHostController, notesViewModel: NotesViewModel)
                 }
 
                 is UiState.Success -> {
-                    notesViewModel.onEvent(NotesAction.FetchNotes)
                     isBookmarking = false
 
                 }
             }
         }
     }
+    LaunchedEffect(true) {
+        authViewModel.userFlow.collect { state ->
+            when (state) {
+                is UiState.Success -> {
+                    user = state.data
+                }
+
+                is UiState.Error -> {
+                    snackBarHostState.showSnackbar(message = state.message)
+                }
+
+                else -> {}
+            }
+        }
+
+    }
+
     Scaffold(
         topBar = {
             val appName = buildAnnotatedString {
@@ -204,7 +202,7 @@ fun MainScreen(navController: NavHostController, notesViewModel: NotesViewModel)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp),
+                    .padding(vertical = 3.dp,horizontal = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -212,28 +210,37 @@ fun MainScreen(navController: NavHostController, notesViewModel: NotesViewModel)
                     text = appName,
                     fontFamily = ArchitectsFamily,
                     fontSize = 28.sp,
-                    color = Lighter
+                    color = Lighter.copy(alpha = 0.7f)
                 )
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(30.dp)
-                        .bounceClick()
-                        .clickable {
-                            scope.launch {
-                                drawerState.open()
-                            }
-                        }
-                    ,
-                    tint = Lighter
-                )
-            }
+                if (user.avatar.isEmpty()) {
+                    IconButton(
+                        onClick = {
+                                  navController.navigate(NavConstants.SETTINGS_SCREEN.name)
+                        },
+                        colors = IconButtonDefaults.iconButtonColors(LightBlack ),
+                        modifier =Modifier
+                            .size(40.dp)
+//                            .border(BorderStroke(0.5.dp,RichBlue),shape =CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = RichBlue,
+                        )
+                    }
+                } else {
+                    AsyncImage(
+                        model = user.avatar,
+                        contentDescription = null,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
 
+            }
 
         },
         snackbarHost = {
-            SnackbarHost(snackbarHostState)
+            SnackbarHost(snackBarHostState)
         },
         containerColor = DarkBackground,
         floatingActionButton = {
@@ -427,7 +434,7 @@ fun MainScreen(navController: NavHostController, notesViewModel: NotesViewModel)
                                 }
 
                                 Text(
-                                    text =if(isBookmarked) "Bookmarked" else "Bookmark",
+                                    text = if (isBookmarked) "Bookmarked" else "Bookmark",
                                     fontSize = 10.sp,
                                     fontFamily = PoppinsFamily,
                                     color = Lighter
@@ -439,41 +446,14 @@ fun MainScreen(navController: NavHostController, notesViewModel: NotesViewModel)
 
                     }
                 }
-                ModalNavigationDrawer(
-                    drawerContent = {
-                        ModalDrawerSheet{
-                            navigationItems.forEachIndexed{index, item ->
-                                NavigationDrawerItem(
-                                    label = {
-                                        Text(text = item.title)
-                                    },
-                                    selected = selectedItemIndex == index,
-                                    onClick = {
-                                        selectedItemIndex = index
-                                        scope.launch {
-                                            drawerState.close()
-                                        }
-                                    },
-                                    icon = {
-                                        Icon(
-                                            imageVector = if (index == selectedItemIndex) {
-                                                item.selectedIcon
-                                            } else item.unselectedIcon,
-                                            contentDescription = item.title
-                                        )
-                                    },                                )
-                            }
-                        }
-                },
-                    drawerState = drawerState
-                ) {
-                    
-                }
+
 
             }
         }
 
     }
+
+
 }
 
 @Composable

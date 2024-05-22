@@ -1,6 +1,7 @@
 package com.example.echonote.presentation
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -165,17 +166,28 @@ fun UpdateNoteScreen(notesViewModel: NotesViewModel,navController: NavController
 
      isButtonEnabled = isNoteTextChanged || isNoteHeadingChanged || isImageChanged
 
-
+    BackHandler(onBack = {
+        notesViewModel.resetCreateNoteScreenState(true)
+        navController.navigateUp()
+    })
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(hostState = snackBarSate) },
         containerColor = DarkBackground,
         topBar = {
             TopAppBar(
-                title = { },
+                title = {
+//                        Text(
+//                            text = "Edit Note",
+//                            fontFamily = PoppinsFamily,
+//                            color = Lighter
+//                        )
+                },
                 navigationIcon = {
                     IconButton(onClick = {
+                        notesViewModel.resetCreateNoteScreenState(true)
                         navController.navigateUp()
+
                     }) {
 
                         Icon(
@@ -306,7 +318,7 @@ fun UpdateNoteScreen(notesViewModel: NotesViewModel,navController: NavController
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = dateText,
+                        text = selectedNote?.date ?: "",
                         fontFamily = PoppinsFamily,
                         fontSize = 11.sp,
                         color = DarkGray

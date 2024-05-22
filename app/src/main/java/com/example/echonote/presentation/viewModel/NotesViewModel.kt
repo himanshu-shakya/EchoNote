@@ -55,7 +55,6 @@ class NotesViewModel(private val notesRepository: NotesRepository) : ViewModel()
         )
     )
     val textFormatting = _textEditorState.asStateFlow()
-
     private val _listState = MutableStateFlow(
         ListState(
             unorderedListSelected = false,
@@ -76,6 +75,7 @@ class NotesViewModel(private val notesRepository: NotesRepository) : ViewModel()
     val noteText = _noteText.asStateFlow()
     private val _noteHeading = MutableStateFlow("")
     val noteHeading = _noteHeading.asStateFlow()
+
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     val fetchNotesFlow = _searchQuery
         .debounce(1000L)
@@ -109,6 +109,8 @@ class NotesViewModel(private val notesRepository: NotesRepository) : ViewModel()
             SharingStarted.WhileSubscribed(5000),
             UiState.Loading
         )
+    private val _bookmarkedNotes = MutableStateFlow<List<Notes>>(emptyList())
+    val bookmarkedNotes = _bookmarkedNotes.asStateFlow()
 
 
     fun onEvent(notesAction: NotesAction) {
@@ -130,25 +132,28 @@ class NotesViewModel(private val notesRepository: NotesRepository) : ViewModel()
             }
 
             is NotesAction.BookmarkNote -> {
-                bookmarkNote(notesAction.noteId,notesAction.bookmark)
+                bookmarkNote(notesAction.noteId, notesAction.bookmark)
             }
         }
     }
-    private fun bookmarkNote(noteId: String,bookmark:Boolean){
+    private fun bookmarkNote(noteId: String, bookmark: Boolean) {
         _bookmarkNoteFlow.update { UiState.Loading }
         viewModelScope.launch {
             notesRepository.bookmarkNote(noteId, bookmark).collectLatest { result ->
-                when(result){
+                when (result) {
                     is Result.Error -> {
                         _bookmarkNoteFlow.update { UiState.Error(result.error) }
                     }
-                    is Result.Success ->{
+
+                    is Result.Success -> {
                         _bookmarkNoteFlow.update { UiState.Success(result.data) }
+                        fetchNotes()
                     }
                 }
             }
         }
     }
+
     private fun updateNote(noteId: String, note: CreateNote) {
         viewModelScope.launch {
             _updateNoteFlow.update { UiState.Loading }
@@ -179,6 +184,7 @@ class NotesViewModel(private val notesRepository: NotesRepository) : ViewModel()
 
                     is Result.Success -> {
                         _deleteNoteFlow.update { UiState.Success(result.data) }
+                        fetchNotes()
                     }
                 }
             }
@@ -196,9 +202,10 @@ class NotesViewModel(private val notesRepository: NotesRepository) : ViewModel()
 
                     is Result.Success -> {
                         val sortedNotes = result.data.sortedByDescending { it.isBookmarked }
-                        _fetchNotesFlow.update {
-                            UiState.Success(sortedNotes)
-                        }
+                        _fetchNotesFlow.update { UiState.Success(sortedNotes) }
+
+                        val bookmarkedNotes = sortedNotes.filter { it.isBookmarked }
+                        _bookmarkedNotes.update { bookmarkedNotes }
                     }
                 }
             }
@@ -252,7 +259,6 @@ class NotesViewModel(private val notesRepository: NotesRepository) : ViewModel()
     }
 
 
-
     fun resetCreateNoteScreenState(resetAll: Boolean) {
         if (resetAll) {
             _noteText.value = ""
@@ -280,6 +286,7 @@ class NotesViewModel(private val notesRepository: NotesRepository) : ViewModel()
         val formatter = SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.getDefault())
         return formatter.format(currentDate)
     }
+
     fun resetUpdateNoteState() {
         _updateNoteFlow.update { UiState.Idle }
         _noteText.value = ""

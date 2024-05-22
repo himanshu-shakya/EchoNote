@@ -1,8 +1,11 @@
 package com.example.echonote.data.repository
 
+import android.util.Log
 import com.example.echonote.core.utils.Result
 import com.example.echonote.domain.model.User
+import com.example.echonote.domain.model.toUser
 import com.example.echonote.domain.repository.AuthRepository
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.firestore.FirebaseFirestore
@@ -42,18 +45,34 @@ class AuthRepositoryImpl(
             emitError(e)
         }
     }
+
     override suspend fun storeUser(user: User, userId: String): Flow<Result<Boolean>> = flow {
         try {
             val userDocument = firestore.collection("Users").document(userId)
             val userData = mapOf(
+                "userID" to userId,
                 "name" to user.name,
                 "email" to user.email,
-                "avatar" to user.avatar
+                "avatar" to user.avatar,
             )
             userDocument.set(userData).await()
             emit(Result.Success(true))
         } catch (e: Exception) {
             emitError(e)
+        }
+    }
+
+    override suspend fun getUser(): Flow<Result<User>> {
+        return flow {
+            try {
+                val userID = firebaseAuth.currentUser?.uid!!
+                val user =
+                    firestore.collection("Users").whereEqualTo("userID", userID).get().await()
+                        .toUser()
+                emit(Result.Success(user))
+            } catch (e: Exception) {
+                emitError(e)
+            }
         }
     }
 
@@ -66,7 +85,43 @@ class AuthRepositoryImpl(
         }
     }
 
-     private suspend fun FlowCollector<Result<Boolean>>.emitError(e: Exception) {
+    override suspend fun logout(): Flow<Result<Boolean>> = flow {
+        try {
+            firebaseAuth.signOut()
+            emit(Result.Success(true))
+        } catch (e: Exception) {
+            emitError(e)
+        }
+    }
+
+    override suspend fun deleteAccount(email: String ,password: String): Flow<Result<Boolean>> = flow {
+        val user = firebaseAuth.currentUser
+        if (user == null) {
+            emit(Result.Error("No user is currently signed in"))
+            return@flow
+        }
+            try {
+                val credential = EmailAuthProvider.getCredential(email, password)
+                user.reauthenticate(credential).await()
+                user.delete().await()
+                firestore.collection("Users").document(user.uid).delete().await()
+
+                val notesQuerySnapshot = firestore.collection("Notes")
+                    .whereEqualTo("userID", user.uid)
+                    .get()
+                    .await()
+                for (document in notesQuerySnapshot.documents) {
+                    firestore.collection("Notes").document(document.id).delete().await()
+                }
+                emit(Result.Success(true))
+            } catch (e: Exception) {
+                Log.i("TAG", "deleteAccount: ${e.message}")
+                emitError(e)
+            }
+
+    }
+
+    private suspend fun <T> FlowCollector<Result<T>>.emitError(e: Exception) {
         val errorMessage = when (e) {
             is FirebaseAuthException -> e.localizedMessage ?: "Unknown Firebase Auth Error"
             is FirebaseFirestoreException -> e.localizedMessage ?: "Unknown Firestore Error"

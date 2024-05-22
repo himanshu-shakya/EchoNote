@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.echonote.core.utils.Result
 import com.example.echonote.core.utils.UiState
+import com.example.echonote.domain.model.User
 import com.example.echonote.domain.repository.AuthRepository
 import com.example.echonote.domain.utils.AuthAction
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,12 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
     val createAccount = _createAccountFlow.asStateFlow()
     private val _forgotPasswordFlow = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
     val forgotPasswordFlow = _forgotPasswordFlow.asStateFlow()
+    private val _userFlow = MutableStateFlow<UiState<User>>(UiState.Idle)
+    val userFlow = _userFlow.asStateFlow()
+    private val _logoutFlow = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
+    val logout = _logoutFlow.asStateFlow()
+    private val _deleteAccountFlow = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
+    val deleteAccount = _deleteAccountFlow.asStateFlow()
 
     //create account
     private val _createAccountEmailText = MutableStateFlow("")
@@ -45,12 +52,12 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
     private val _loginEmailError = MutableStateFlow("")
     val loginEmailError = _loginEmailError.asStateFlow()
-    private val _loginPasswordError=MutableStateFlow("")
+    private val _loginPasswordError = MutableStateFlow("")
     val loginPasswordError = _loginPasswordError.asStateFlow()
 
     //forgot password
     private val _fgPassEmail = MutableStateFlow("")
-    val fgPassEmail= _fgPassEmail.asStateFlow()
+    val fgPassEmail = _fgPassEmail.asStateFlow()
     private val _fgPassEmailError = MutableStateFlow("")
     val fgPassEmailError = _fgPassEmailError.asStateFlow()
 
@@ -65,8 +72,55 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
                 login(authAction.email, authAction.password)
             }
 
-            is AuthAction.ForgotPassword ->{
+            is AuthAction.ForgotPassword -> {
                 forgotPassword(email = authAction.email)
+            }
+
+            is AuthAction.GetUser -> {
+                getUser()
+            }
+            is AuthAction.Logout -> {
+                logout()
+            }
+
+            is AuthAction.DeleteAccount -> {
+               deleteAccount(authAction.email, authAction.password)
+            }
+        }
+    }
+
+    private fun deleteAccount(email: String, password: String) {
+        _deleteAccountFlow.update { UiState.Loading }
+        viewModelScope.launch {
+            authRepository.deleteAccount(email,password).collectLatest {result->
+                when(result){
+                    is Result.Error -> { _deleteAccountFlow.update { UiState.Error(result.error) } }
+                    is Result.Success -> { _deleteAccountFlow.update { UiState.Success(result.data) } }
+                }
+
+            }
+        }
+    }
+    private fun logout(){
+        _logoutFlow.update { UiState.Loading }
+        viewModelScope.launch {
+            authRepository.logout().collectLatest {result->
+                when(result){
+                    is Result.Error -> { _logoutFlow.update { UiState.Error(result.error) } }
+                    is Result.Success -> { _logoutFlow.update { UiState.Success(result.data) } }
+                }
+
+            }
+        }
+    }
+    private fun getUser() {
+     _userFlow.update { UiState.Loading }
+        viewModelScope.launch {
+            authRepository.getUser().collectLatest {result->
+                when(result){
+                    is Result.Error -> { _userFlow.update { UiState.Error(result.error) } }
+                    is Result.Success -> { _userFlow.update { UiState.Success(result.data) } }
+                }
             }
         }
     }
@@ -75,11 +129,12 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         _loginFlow.update { UiState.Loading }
         viewModelScope.launch {
             _loginFlow.update { UiState.Loading }
-            authRepository.login(email = email, password = password).collectLatest {result->
-                when(result){
+            authRepository.login(email = email, password = password).collectLatest { result ->
+                when (result) {
                     is Result.Error -> {
                         _loginFlow.update { UiState.Error(result.error) }
                     }
+
                     is Result.Success -> {
                         _loginFlow.update { UiState.Success(result.data) }
                     }
@@ -92,28 +147,31 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
     private fun createAccount(email: String, password: String, userName: String) {
         _createAccountFlow.update { UiState.Loading }
         viewModelScope.launch {
-            authRepository.createAccount(userName =userName,email= email, password =  password).collectLatest {result->
-                when(result){
-                    is Result.Error -> {
-                        _createAccountFlow.update { UiState.Error(result.error) }
-                    }
-                    is Result.Success -> {
-                        _createAccountFlow.update { UiState.Success(result.data) }
-                    }
-                }
+            authRepository.createAccount(userName = userName, email = email, password = password)
+                .collectLatest { result ->
+                    when (result) {
+                        is Result.Error -> {
+                            _createAccountFlow.update { UiState.Error(result.error) }
+                        }
 
-            }
+                        is Result.Success -> {
+                            _createAccountFlow.update { UiState.Success(result.data) }
+                        }
+                    }
+
+                }
         }
     }
 
-    private fun forgotPassword(email: String){
-    _forgotPasswordFlow.update { UiState.Loading }
+    private fun forgotPassword(email: String) {
+        _forgotPasswordFlow.update { UiState.Loading }
         viewModelScope.launch {
-            authRepository.forgotPassword(email).collectLatest {result->
-                when(result){
+            authRepository.forgotPassword(email).collectLatest { result ->
+                when (result) {
                     is Result.Error -> {
                         _forgotPasswordFlow.update { UiState.Error(result.error) }
                     }
+
                     is Result.Success -> {
                         _forgotPasswordFlow.update { UiState.Success(result.data) }
                     }
@@ -156,7 +214,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
     fun loginEmailTextChange(newText: String) {
         _loginEmailText.update { newText }
         if (isValidEmail(newText) || newText.isEmpty()) {
-            _loginEmailError.update{ "" }
+            _loginEmailError.update { "" }
         } else {
             _loginEmailError.update { "Please enter valid email." }
         }
@@ -165,13 +223,14 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
     fun loginPasswordTextChange(newText: String) {
         _loginPasswordText.update { newText }
         if (isValidPassword(newText) || newText.isEmpty()) {
-            _loginPasswordError.update{ "" }
+            _loginPasswordError.update { "" }
         } else {
             _loginPasswordError.update { "Password should be at least 8 characters and include uppercase, lowercase, number, and special character" }
         }
 
     }
-    fun fgPassEmailTextChange(newText:String){
+
+    fun fgPassEmailTextChange(newText: String) {
         _fgPassEmail.update { newText }
         if (isValidEmail(newText) || newText.isEmpty()) {
             _fgPassEmailError.update { "" }
@@ -193,18 +252,27 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         val passwordRegex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+\$).{8,}\$"
         return password.matches(passwordRegex.toRegex())
     }
-    fun resetForgotPasswordState(){
+
+    fun resetForgotPasswordState() {
         _forgotPasswordFlow.update { UiState.Idle }
-        _fgPassEmail.update {""}
+        _fgPassEmail.update { "" }
         _fgPassEmailError.update { "" }
     }
-    fun resetLoginState(){
+
+    fun resetLoginState() {
         _loginFlow.update { UiState.Idle }
         _loginEmailText.update { "" }
         _loginEmailError.update { "" }
         _loginPasswordText.update { "" }
     }
-    fun resetCreateAccountState(){
+
+    fun resetLogoutState(){
+        _logoutFlow.update { UiState.Idle }
+    }
+    fun resetDeleteAccountState(){
+        _deleteAccountFlow.update { UiState.Idle }
+    }
+    fun resetCreateAccountState() {
         _createAccountFlow.update { UiState.Idle }
         _createAccountEmailError.update { "" }
         _createAccountName.update { "" }

@@ -9,8 +9,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class NetworkViewmodel(private val networkConnectivityObserver: NetworkConnectivityObserver): ViewModel() {
-    private val _networkState = MutableStateFlow(NetworkConnectivityObserver.Status.UnAvailable
-    )
+    private val _networkState = MutableStateFlow(NetworkConnectivityObserver.Status.UnAvailable)
     val networkState = _networkState.asStateFlow()
     init {
         observeNetworkConnectivity()
