@@ -11,16 +11,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavHostController
 import com.example.echonote.R
 import com.example.echonote.core.navigation.NavConstants
@@ -51,6 +57,7 @@ import com.example.echonote.ui.theme.Lighter
 import com.example.echonote.ui.theme.PoppinsFamily
 import kotlinx.coroutines.flow.collectLatest
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(navController: NavHostController, authViewModel: AuthViewModel) {
     var user by remember { mutableStateOf(User()) }
@@ -72,35 +79,18 @@ fun SettingsScreen(navController: NavHostController, authViewModel: AuthViewMode
                 is UiState.Success -> {
                     isLoading = false
                     authViewModel.resetLogoutState()
-                    navController.navigate(NavConstants.LOGIN_SCREEN.name)
+                    navController.navigate(NavConstants.LOGIN_SCREEN.name){
+                        launchSingleTop = true
+                        popUpTo(NavConstants.MAIN_ROUTE.name    ){
+                            inclusive =true
+                        }
+                    }
                 }
-
                 else -> {}
             }
         }
     }
-    LaunchedEffect(true) {
-        authViewModel.deleteAccount.collectLatest { state ->
-            when (state) {
-                is UiState.Error -> {
-                    isLoading = false
-                    snackBarState.showSnackbar(state.message)
-                }
 
-                UiState.Loading -> {
-                    isLoading = true
-                }
-
-                is UiState.Success -> {
-                    isLoading = false
-                    authViewModel.resetDeleteAccountState()
-                    navController.navigate(NavConstants.LOGIN_SCREEN.name)
-                }
-
-                else -> {}
-            }
-        }
-    }
     LaunchedEffect(key1 = Unit) {
         authViewModel.userFlow.collectLatest {
             when (it) {
@@ -126,7 +116,35 @@ fun SettingsScreen(navController: NavHostController, authViewModel: AuthViewMode
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = DarkBackground,
-        snackbarHost = { SnackbarHost(hostState = snackBarState) }
+        snackbarHost = { SnackbarHost(hostState = snackBarState) },
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Settings",
+                        fontFamily = PoppinsFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 25.sp,
+                        color = Lighter,
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        if(navController.currentBackStackEntry?.lifecycle?.currentState == Lifecycle.State.RESUMED){
+                            navController.navigateUp()
+                        }
+
+                    }) {
+
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
+            )
+        }
     ) {
         if (isLoading) {
             Box(
@@ -156,13 +174,13 @@ fun SettingsScreen(navController: NavHostController, authViewModel: AuthViewMode
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(30.dp)
                 ) {
-                    SettingOptions(
-                        icon = R.drawable.ic_edit,
-                        text = "Edit Profile",
-                        onClick = {
-
-                        }
-                    )
+//                    SettingOptions(
+//                        icon = R.drawable.ic_edit,
+//                        text = "Edit Profile",
+//                        onClick = {
+//
+//                        }
+//                    )
                     SettingOptions(
                         icon = R.drawable.ic_bookmarked,
                         text = "Bookmarks",
@@ -206,6 +224,9 @@ fun SettingsScreen(navController: NavHostController, authViewModel: AuthViewMode
                         Button(
                             onClick = {
                                 showDialog = false
+                                navController.navigate(NavConstants.DELETE_ACCOUNT_SCREEN.name){
+                                    launchSingleTop = true
+                                }
                             },
                             shape = RoundedCornerShape(20.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Red)

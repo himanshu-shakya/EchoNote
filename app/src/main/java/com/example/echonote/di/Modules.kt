@@ -11,6 +11,7 @@ import com.example.echonote.presentation.viewModel.NetworkViewmodel
 import com.example.echonote.presentation.viewModel.NotesViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -18,10 +19,11 @@ import org.koin.dsl.module
 val firebaseModules = module {
     single { FirebaseAuth.getInstance() }
     single{FirebaseFirestore.getInstance()}
+    single{FirebaseStorage.getInstance()}
 }
 val repositoryModules = module {
     single<AuthRepository> { AuthRepositoryImpl(get(),get())}
-    single<NotesRepository>{NotesRepositoryImpl(get(),get())}
+    single<NotesRepository>{NotesRepositoryImpl(get(),get(),get())}
     single<NetworkConnectivityObserver>{ NetworkConnectivityObserverImpl(androidContext()) }
 }
 

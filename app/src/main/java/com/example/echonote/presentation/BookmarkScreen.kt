@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavController
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
@@ -47,6 +48,7 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.echonote.R
 import com.example.echonote.core.navigation.NavConstants
 import com.example.echonote.core.ui_componantes.EchoNoteLoading
+import com.example.echonote.core.ui_componantes.bounceClick
 import com.example.echonote.core.utils.UiState
 import com.example.echonote.domain.model.Notes
 import com.example.echonote.domain.utils.NotesAction
@@ -102,7 +104,9 @@ fun BookmarkNotesScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        navController.navigateUp()
+                        if(navController.currentBackStackEntry?.lifecycle?.currentState == Lifecycle.State.RESUMED){
+                            navController.navigateUp()
+                        }
 
                     }) {
 
@@ -198,7 +202,7 @@ fun BookMarkNotesCard(
             )
             .clickable {
                 onNoteClick()
-            },
+            }.bounceClick(),
     ) {
         Column(
             modifier = modifier

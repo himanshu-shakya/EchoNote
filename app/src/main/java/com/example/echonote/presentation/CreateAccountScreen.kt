@@ -89,7 +89,12 @@ fun CreateAccountScreen(authViewModel: AuthViewModel, navController: NavHostCont
                     buttonSate = ButtonState.SUCCESS
                     delay(300)
                     isTextFieldEnabled =true
-                    navController.navigate(NavConstants.MAIN_SCREEN.name)
+                    navController.navigate(NavConstants.MAIN_SCREEN.name){
+                        launchSingleTop = true
+                        popUpTo(NavConstants.AUTH_ROUTE.name){
+                            inclusive = true
+                        }
+                    }
 
                 }
             }

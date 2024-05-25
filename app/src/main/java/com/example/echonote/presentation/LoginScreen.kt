@@ -87,7 +87,13 @@ fun LoginScreen(authViewModel: AuthViewModel, navController: NavHostController) 
                     buttonState = ButtonState.SUCCESS
                     delay(200)
                     textFieldEnabled= true
-                    navController.navigate(NavConstants.MAIN_SCREEN.name)
+                        authViewModel.resetLoginState()
+                    navController.navigate(NavConstants.MAIN_SCREEN.name){
+                        launchSingleTop = true
+                        popUpTo(NavConstants.AUTH_ROUTE.name){
+                            inclusive = true
+                        }
+                    }
                 }
             }
 
@@ -196,14 +202,14 @@ fun LoginScreen(authViewModel: AuthViewModel, navController: NavHostController) 
                         color = DarkGray
                     )
                     val text = buildAnnotatedString {
-                        append("No account yet?")
+                        append("No account yet? ")
                         withStyle(
                             style = SpanStyle(
                                 color = RichBlue,
                                 textDecoration = TextDecoration.Underline
                             )
                         ) {
-                            append("Create an Account ")
+                            append("Create an Account")
                         }
                     }
                     Text(

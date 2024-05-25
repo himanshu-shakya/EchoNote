@@ -1,11 +1,12 @@
 package com.example.echonote.domain.model
 
+import android.net.Uri
 import com.google.firebase.firestore.QuerySnapshot
 
 data class CreateNote(
     val text: String,
     val title: String,
-    val image: String = "",
+    val image: Uri = Uri.EMPTY,
     val userID: String = "",
     val date: String = "",
     val isBookmarked: Boolean = false

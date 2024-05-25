@@ -270,6 +270,8 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         _logoutFlow.update { UiState.Idle }
     }
     fun resetDeleteAccountState(){
+        _loginEmailText.update { "" }
+        _loginPasswordText.update { "" }
         _deleteAccountFlow.update { UiState.Idle }
     }
     fun resetCreateAccountState() {

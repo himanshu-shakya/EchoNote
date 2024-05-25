@@ -94,31 +94,37 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun deleteAccount(email: String ,password: String): Flow<Result<Boolean>> = flow {
-        val user = firebaseAuth.currentUser
+    override suspend fun deleteAccount(email: String, password: String): Flow<Result<Boolean>> = flow {
+        val user = FirebaseAuth.getInstance().currentUser
+        val firestore = FirebaseFirestore.getInstance()
         if (user == null) {
             emit(Result.Error("No user is currently signed in"))
             return@flow
         }
-            try {
-                val credential = EmailAuthProvider.getCredential(email, password)
-                user.reauthenticate(credential).await()
-                user.delete().await()
-                firestore.collection("Users").document(user.uid).delete().await()
+        try {
+            val credential = EmailAuthProvider.getCredential(email, password)
+            user.reauthenticate(credential).await()
 
-                val notesQuerySnapshot = firestore.collection("Notes")
-                    .whereEqualTo("userID", user.uid)
-                    .get()
-                    .await()
-                for (document in notesQuerySnapshot.documents) {
-                    firestore.collection("Notes").document(document.id).delete().await()
-                }
-                emit(Result.Success(true))
-            } catch (e: Exception) {
-                Log.i("TAG", "deleteAccount: ${e.message}")
-                emitError(e)
+            // Delete user document from Firestore
+            firestore.collection("Users").document(user.uid).delete().await()
+
+            // Fetch and delete all notes associated with the user
+            val notesQuerySnapshot = firestore.collection("Notes")
+                .whereEqualTo("userID", user.uid)
+                .get()
+                .await()
+            for (document in notesQuerySnapshot.documents) {
+                firestore.collection("Notes").document(document.id).delete().await()
             }
 
+            // Finally, delete the user authentication
+            user.delete().await()
+
+            emit(Result.Success(true))
+        } catch (e: Exception) {
+            Log.i("TAG", "deleteAccount: ${e.message}")
+            emit(Result.Error(e.message ?: "Unknown error occurred"))
+        }
     }
 
     private suspend fun <T> FlowCollector<Result<T>>.emitError(e: Exception) {

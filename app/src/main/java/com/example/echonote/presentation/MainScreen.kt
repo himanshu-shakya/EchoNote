@@ -145,6 +145,7 @@ fun MainScreen(
                 is UiState.Success -> {
                     isDeleting = false
                     snackBarHostState.showSnackbar(message = "Note Deleted")
+                    notesViewModel.resetDeleteNoteState()
                 }
             }
 
@@ -474,7 +475,7 @@ fun NotesCard(
             )
             .clickable {
                 onNoteClick()
-            },
+            }.bounceClick(),
     ) {
         Column(
             modifier = modifier

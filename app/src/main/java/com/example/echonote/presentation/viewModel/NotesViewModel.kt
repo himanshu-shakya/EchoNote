@@ -293,5 +293,8 @@ class NotesViewModel(private val notesRepository: NotesRepository) : ViewModel()
         _noteHeading.value = ""
     }
 
+    fun resetDeleteNoteState(){
+        _deleteNoteFlow.update { UiState.Idle }
+    }
 
 }

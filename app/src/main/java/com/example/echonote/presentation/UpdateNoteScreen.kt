@@ -50,6 +50,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.echonote.core.ui_componantes.EchoNoteButton
@@ -105,6 +107,7 @@ fun UpdateNoteScreen(notesViewModel: NotesViewModel,navController: NavController
             richTextFieldState.setHtml(note.text)
             notesViewModel.onNoteHeadingText(note.title)
             imageUriPath = note.image
+            imageUri= note.image.toUri()
         }
     }
 
@@ -177,17 +180,13 @@ fun UpdateNoteScreen(notesViewModel: NotesViewModel,navController: NavController
         topBar = {
             TopAppBar(
                 title = {
-//                        Text(
-//                            text = "Edit Note",
-//                            fontFamily = PoppinsFamily,
-//                            color = Lighter
-//                        )
                 },
                 navigationIcon = {
                     IconButton(onClick = {
                         notesViewModel.resetCreateNoteScreenState(true)
-                        navController.navigateUp()
-
+                        if(navController.currentBackStackEntry?.lifecycle?.currentState == Lifecycle.State.RESUMED){
+                            navController.navigateUp()
+                        }
                     }) {
 
                         Icon(
@@ -214,10 +213,10 @@ fun UpdateNoteScreen(notesViewModel: NotesViewModel,navController: NavController
                     val createNote = CreateNote(
                         text = noteText,
                         title = noteHeading,
-                        image = imageUriPath,
+                        image = imageUri,
                         date = dateText
                     )
-                        notesViewModel.onEvent(NotesAction.UpdateNote(selectedNote?.id!!,createNote))
+             notesViewModel.onEvent(NotesAction.UpdateNote(selectedNote?.id!!,createNote))
 
                 },
                 isEnabled = isButtonEnabled,
