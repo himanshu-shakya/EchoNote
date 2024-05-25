@@ -38,12 +38,9 @@ To get started with EchoNote, simply download the application from [link] and in
 
 ## Feedback
 
-We value your feedback! If you have any suggestions, feature requests, or encounter any issues while using EchoNote, please don't hesitate to reach out to us. You can contact our support team at [support@example.com] or submit a GitHub issue [here].
+We value your feedback! If you have any suggestions, feature requests, or encounter any issues while using EchoNote, please don't hesitate to reach out to us. You can contact our support team at [sagarshakya119@gmail.com] or submit a GitHub issue [here].
 
-## Contributors
 
-- John Doe (@johndoe)
-- Jane Smith (@janesmith)
 
 
 
