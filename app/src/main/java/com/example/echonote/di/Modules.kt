@@ -22,7 +22,7 @@ val firebaseModules = module {
     single{FirebaseStorage.getInstance()}
 }
 val repositoryModules = module {
-    single<AuthRepository> { AuthRepositoryImpl(get(),get())}
+    single<AuthRepository> { AuthRepositoryImpl(get(),get(),get())}
     single<NotesRepository>{NotesRepositoryImpl(get(),get(),get())}
     single<NetworkConnectivityObserver>{ NetworkConnectivityObserverImpl(androidContext()) }
 }

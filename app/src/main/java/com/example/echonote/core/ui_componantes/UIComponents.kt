@@ -20,8 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -117,7 +116,7 @@ fun EchoNoteTextField(
                 focusedIndicatorColor = RichBlue,
                 focusedContainerColor = LightBlack,
                 unfocusedContainerColor = LightBlack,
-                unfocusedIndicatorColor = DarkGray
+                unfocusedIndicatorColor = DarkGray,
             ),
             textStyle = TextStyle(
                 color = Lighter,
@@ -517,35 +516,20 @@ fun UserCard(modifier: Modifier = Modifier, user: User) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (user.avatar.isNotEmpty()) {
             AsyncImage(
                 model = user.avatar,
                 contentDescription = "avtar",
-                modifier = Modifier.size(150.dp),
+                modifier = Modifier
+                    .size(150.dp)
+                    .clip(CircleShape)
+                    .border(
+                        width = 1.dp,
+                        color = RichBlue,
+                        shape = CircleShape
+                    ),
                 contentScale = ContentScale.FillBounds
             )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(160.dp)
-                    .background(Color.Transparent, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(150.dp)
-                        .background(LightBlack, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "avatar",
-                        tint = RichBlue,
-                        modifier = Modifier.size(100.dp)
-                    )
-                }
-            }
-        }
+
         Column(
             modifier = Modifier
                 .fillMaxWidth(),

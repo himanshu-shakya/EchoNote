@@ -27,6 +27,9 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
     val logout = _logoutFlow.asStateFlow()
     private val _deleteAccountFlow = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
     val deleteAccount = _deleteAccountFlow.asStateFlow()
+    private val _updateUserFlow  = MutableStateFlow<UiState<Boolean>>(UiState.Idle)
+    val updateUser = _updateUserFlow.asStateFlow()
+
 
     //create account
     private val _createAccountEmailText = MutableStateFlow("")
@@ -86,9 +89,28 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
             is AuthAction.DeleteAccount -> {
                deleteAccount(authAction.email, authAction.password)
             }
+
+            is AuthAction.UpdateUser -> {
+                updateUser(authAction.user)
+            }
         }
     }
 
+    private fun updateUser(user:User){
+        _updateUserFlow.update { UiState.Loading }
+        viewModelScope.launch {
+            authRepository.updateUser(user).collectLatest { result->
+                when(result){
+                    is Result.Error -> {
+                        _updateUserFlow.update { UiState.Error(result.error) }
+                    }
+                    is Result.Success -> {
+                        _updateUserFlow.update { UiState.Success(result.data) }
+                    }
+                }
+            }
+        }
+    }
     private fun deleteAccount(email: String, password: String) {
         _deleteAccountFlow.update { UiState.Loading }
         viewModelScope.launch {
@@ -282,6 +304,12 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         _createAccountEmailText.update { "" }
         _createAccountNameError.update { "" }
         _createAccountPasswordError.update { "" }
+    }
+    fun resetUpdateUserState(){
+        _updateUserFlow.update { UiState.Idle }
+        _createAccountEmailError.update { "" }
+        _createAccountName.update { "" }
+
     }
 
 }

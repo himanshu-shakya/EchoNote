@@ -12,4 +12,5 @@ interface AuthRepository {
     suspend fun getUser():Flow<Result<User>>
     suspend fun logout(): Flow<Result<Boolean>>
     suspend fun deleteAccount(email :String , password: String): Flow<Result<Boolean>>
+    suspend fun updateUser(user: User): Flow<Result<Boolean>>
 }

@@ -1,26 +1,16 @@
 package com.example.echonote.presentation
 
-import android.Manifest
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,21 +21,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Create
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -74,7 +66,6 @@ import com.example.echonote.R
 import com.example.echonote.core.ui_componantes.EchoNoteButton
 import com.example.echonote.core.ui_componantes.EchoNoteColorButton
 import com.example.echonote.core.ui_componantes.EchoNoteIconButton
-import com.example.echonote.core.ui_componantes.bounceClick
 import com.example.echonote.core.utils.ButtonState
 import com.example.echonote.core.utils.UiState
 import com.example.echonote.core.utils.UriPathFinder
@@ -111,6 +102,8 @@ fun CreateNotesScreen(
     navController: NavController,
     notesViewModel: NotesViewModel,
 ) {
+
+
     val snackBarSate = remember { SnackbarHostState() }
     var buttonState by remember {
         mutableStateOf(ButtonState.IDLE)
@@ -126,17 +119,6 @@ fun CreateNotesScreen(
     val isButtonEnabled =
         richTextFieldState.annotatedString.text.isNotEmpty() && noteHeading.isNotEmpty()
     var dateText by remember { mutableStateOf("") }
-    var isGranted by remember { mutableStateOf(false) }
-    val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        Manifest.permission.MANAGE_EXTERNAL_STORAGE
-    } else {
-        Manifest.permission.READ_EXTERNAL_STORAGE
-    }
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = {
-            isGranted = it
-        })
     var imageUri by remember { mutableStateOf(Uri.EMPTY) }
     var imageUriPath by remember {
         mutableStateOf("")
@@ -160,13 +142,7 @@ fun CreateNotesScreen(
                     }
                 }
             })
-    LaunchedEffect(key1 = Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            isGranted = askPermission(context)
-        } else {
-            launcher.launch(permission)
-        }
-    }
+
     LaunchedEffect(richTextFieldState.annotatedString) {
         currentWordSize = richTextFieldState.annotatedString.text.length.toString()
         if (richTextFieldState.annotatedString.text.isEmpty()) {
@@ -206,16 +182,7 @@ fun CreateNotesScreen(
         notesViewModel.resetCreateNoteScreenState(true)
         navController.navigateUp()
     })
-    if (!isGranted) {
-        PermissionDeniedScreen(requestPermission = {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                isGranted = askPermission(context)
-            } else {
-                launcher.launch(permission)
-            }
-        })
 
-    }else{
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             snackbarHost = { SnackbarHost(hostState = snackBarSate) },
@@ -440,7 +407,7 @@ fun CreateNotesScreen(
 
             }
         }
-    }
+
 }
 
 @Composable
@@ -565,13 +532,21 @@ fun ColorSelectionRow(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TextFormattingRow(
     viewModel: NotesViewModel,
     textEditorState: TextEditorState,
     richTextFieldState: RichTextState,
     onImageClick: () -> Unit,
+
 ) {
+    val boldToolTipState = rememberTooltipState()
+    val italicToolTipState = rememberTooltipState()
+    val underlineToolTipState = rememberTooltipState()
+    val listToolTipState = rememberTooltipState()
+    val highlighterToolTipState = rememberTooltipState()
+    val imageToolTipState = rememberTooltipState()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -580,140 +555,137 @@ fun TextFormattingRow(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        EchoNoteIconButton(
-            icon = R.drawable.ic_bold,
-            onClick = {
-                viewModel.onTextFormattingChange(
-                    textEditorState.copy(isBold = !textEditorState.isBold)
-                )
-                richTextFieldState.toggleSpanStyle(SpanStyle(fontWeight = FontWeight.Bold))
-            },
-            isClicked = textEditorState.isBold
-        )
-        EchoNoteIconButton(
-            icon = R.drawable.ic_italic,
-            onClick = {
-                viewModel.onTextFormattingChange(
-                    textEditorState.copy(isItalic = !textEditorState.isItalic)
-                )
-                richTextFieldState.toggleSpanStyle(SpanStyle(fontStyle = FontStyle.Italic))
-            },
-            isClicked = textEditorState.isItalic
-        )
-        EchoNoteIconButton(
-            icon = R.drawable.ic_underline,
-            onClick = {
-                viewModel.onTextFormattingChange(
-                    textEditorState.copy(isUnderline = !textEditorState.isUnderline)
-                )
-                richTextFieldState.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.Underline))
-            },
-            isClicked = textEditorState.isUnderline
-        )
-        EchoNoteIconButton(
-            icon = Icons.Default.Create,
-            onClick = {
-                viewModel.onTextFormattingChange(
-                    textEditorState.copy(
-                        isHighlighterClicked = !textEditorState.isHighlighterClicked,
-                        isListClicked = false
-                    )
-                )
-            },
-            isClicked = textEditorState.isHighlighterClicked
-        )
-        EchoNoteIconButton(
-            icon = R.drawable.ic_list,
-            onClick = {
-                viewModel.onTextFormattingChange(
-                    textEditorState.copy(
-                        isListClicked = !textEditorState.isListClicked,
-                        isHighlighterClicked = false
-                    )
-                )
-            },
-            isClicked = textEditorState.isListClicked
-        )
-        EchoNoteIconButton(
-            icon = R.drawable.ic_image,
-            onClick = {
-                onImageClick()
-            },
-            isClicked = textEditorState.isImageClicked
-        )
-    }
-}
-
-
-@RequiresApi(Build.VERSION_CODES.R)
-private fun askPermission(context: Context): Boolean {
-    var granted = false
-    if (!Environment.isExternalStorageManager()) {
-        try {
-            val intent = Intent(
-                Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
-            )
-
-            val uri = Uri.fromParts("package", context.packageName, null)
-            intent.data = uri
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            context.startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            val intent = Intent()
-            intent.action = Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
-            context.startActivity(intent)
-        }
-    } else {
-        granted = true
-    }
-    return granted
-}
-
-@Composable
-fun PermissionDeniedScreen(
-    requestPermission: () -> Unit,
-) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Permission Denied",
-                style = TextStyle(
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Red
-                )
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Please grant permission to access files",
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    color = Color.Gray
-                )
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    requestPermission()
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = RichBlue),
-                shape = RoundedCornerShape(30.dp),
-                modifier = Modifier.bounceClick()
-            ) {
+        TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = {
+            PlainTooltip(containerColor = LightBlack.copy(0.7f)) {
                 Text(
-                    text = "Grant Permission",
-                    fontFamily = PoppinsFamily,
-                    fontSize = 15.sp    ,
-                    color =Lighter
+                    text = "Bold",
+                    color = Lighter,
+                    fontFamily = PoppinsFamily
                 )
             }
+        }, state = boldToolTipState
+        ) {
+            EchoNoteIconButton(
+                icon = R.drawable.ic_bold,
+                onClick = {
+                    viewModel.onTextFormattingChange(
+                        textEditorState.copy(isBold = !textEditorState.isBold)
+                    )
+                    richTextFieldState.toggleSpanStyle(SpanStyle(fontWeight = FontWeight.Bold))
+                },
+                isClicked = textEditorState.isBold
+            )
+        }
+        TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = {
+            PlainTooltip(containerColor = LightBlack.copy(0.7f)) {
+                Text(
+                    text = "Italic",
+                    color = Lighter,
+                    fontFamily = PoppinsFamily
+                )
+            }
+        }, state = italicToolTipState
+        ) {
+            EchoNoteIconButton(
+                icon = R.drawable.ic_italic,
+                onClick = {
+                    viewModel.onTextFormattingChange(
+                        textEditorState.copy(isItalic = !textEditorState.isItalic)
+                    )
+                    richTextFieldState.toggleSpanStyle(SpanStyle(fontStyle = FontStyle.Italic))
+                },
+                isClicked = textEditorState.isItalic
+            )
+        }
+        TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = {
+            PlainTooltip(containerColor = LightBlack.copy(0.7f)) {
+                Text(
+                    text = "Underline",
+                    color = Lighter,
+                    fontFamily = PoppinsFamily
+                )
+            }
+        }, state =underlineToolTipState
+        ) {
+            EchoNoteIconButton(
+                icon = R.drawable.ic_underline,
+                onClick = {
+                    viewModel.onTextFormattingChange(
+                        textEditorState.copy(isUnderline = !textEditorState.isUnderline)
+                    )
+                    richTextFieldState.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.Underline))
+                },
+                isClicked = textEditorState.isUnderline
+            )
+        }
+        TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = {
+            PlainTooltip(containerColor = LightBlack.copy(0.7f)) {
+                Text(
+                    text = "Highlighter",
+                    color = Lighter,
+                    fontFamily = PoppinsFamily
+                )
+            }
+        }, state = highlighterToolTipState
+        ) {
+            EchoNoteIconButton(
+                icon = Icons.Default.Create,
+                onClick = {
+                    viewModel.onTextFormattingChange(
+                        textEditorState.copy(
+                            isHighlighterClicked = !textEditorState.isHighlighterClicked,
+                            isListClicked = false
+                        )
+                    )
+                },
+                isClicked = textEditorState.isHighlighterClicked
+            )
+        }
+        TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = {
+            PlainTooltip(containerColor = LightBlack.copy(0.7f)) {
+                Text(
+                    text = "list",
+                    color = Lighter,
+                    fontFamily = PoppinsFamily
+                )
+            }
+        }, state = listToolTipState
+        ) {
+            EchoNoteIconButton(
+                icon = R.drawable.ic_list,
+                onClick = {
+                    viewModel.onTextFormattingChange(
+                        textEditorState.copy(
+                            isListClicked = !textEditorState.isListClicked,
+                            isHighlighterClicked = false
+                        )
+                    )
+                },
+                isClicked = textEditorState.isListClicked
+            )
+        }
+        TooltipBox(positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(), tooltip = {
+            PlainTooltip(containerColor = LightBlack.copy(0.7f)) {
+                Text(
+                    text = "Upload Image",
+                    color = Lighter,
+                    fontFamily = PoppinsFamily
+                )
+            }
+        }, state = imageToolTipState
+        ) {
+            EchoNoteIconButton(
+                icon = R.drawable.ic_image,
+                onClick = {
+                    onImageClick()
+                },
+                isClicked = textEditorState.isImageClicked
+            )
         }
     }
 }
+
+
+
 
 

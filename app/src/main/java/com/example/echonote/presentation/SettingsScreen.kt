@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -33,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -64,6 +66,9 @@ fun SettingsScreen(navController: NavHostController, authViewModel: AuthViewMode
     var isLoading by remember { mutableStateOf(false) }
     val snackBarState = remember { SnackbarHostState() }
     var showDialog by remember { mutableStateOf(false) }
+    var userLoading by remember {
+        mutableStateOf(false)
+    }
     LaunchedEffect(true) {
         authViewModel.logout.collectLatest { state ->
             when (state) {
@@ -79,13 +84,14 @@ fun SettingsScreen(navController: NavHostController, authViewModel: AuthViewMode
                 is UiState.Success -> {
                     isLoading = false
                     authViewModel.resetLogoutState()
-                    navController.navigate(NavConstants.LOGIN_SCREEN.name){
+                    navController.navigate(NavConstants.LOGIN_SCREEN.name) {
                         launchSingleTop = true
-                        popUpTo(NavConstants.MAIN_ROUTE.name    ){
-                            inclusive =true
+                        popUpTo(NavConstants.MAIN_ROUTE.name) {
+                            inclusive = true
                         }
                     }
                 }
+
                 else -> {}
             }
         }
@@ -95,7 +101,8 @@ fun SettingsScreen(navController: NavHostController, authViewModel: AuthViewMode
         authViewModel.userFlow.collectLatest {
             when (it) {
                 is UiState.Error -> {
-
+                    userLoading = false
+                    snackBarState.showSnackbar(it.message)
                 }
 
                 UiState.Idle -> {
@@ -103,15 +110,19 @@ fun SettingsScreen(navController: NavHostController, authViewModel: AuthViewMode
                 }
 
                 UiState.Loading -> {
-
+                    userLoading = true
                 }
 
                 is UiState.Success -> {
                     user = it.data
+                    userLoading = false
                 }
 
             }
         }
+    }
+    LaunchedEffect(key1 = Unit) {
+        authViewModel.onEvent(AuthAction.GetUser)
     }
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -130,7 +141,7 @@ fun SettingsScreen(navController: NavHostController, authViewModel: AuthViewMode
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        if(navController.currentBackStackEntry?.lifecycle?.currentState == Lifecycle.State.RESUMED){
+                        if (navController.currentBackStackEntry?.lifecycle?.currentState == Lifecycle.State.RESUMED) {
                             navController.navigateUp()
                         }
 
@@ -162,9 +173,19 @@ fun SettingsScreen(navController: NavHostController, authViewModel: AuthViewMode
                 verticalArrangement = Arrangement.spacedBy(30.dp)
             ) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalAlignment = CenterHorizontally
                 ) {
-                    UserCard(user = user)
+                    if (userLoading) {
+                        Box(
+                            modifier = Modifier.size(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            EchoNoteLoading()
+                        }
+                    } else {
+                        UserCard(user = user)
+                    }
                     HorizontalDivider(
                         thickness = Dp.Hairline,
                         color = DarkGray
@@ -174,13 +195,13 @@ fun SettingsScreen(navController: NavHostController, authViewModel: AuthViewMode
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(30.dp)
                 ) {
-//                    SettingOptions(
-//                        icon = R.drawable.ic_edit,
-//                        text = "Edit Profile",
-//                        onClick = {
-//
-//                        }
-//                    )
+                    SettingOptions(
+                        icon = R.drawable.ic_edit,
+                        text = "Edit Profile",
+                        onClick = {
+                            navController.navigate(NavConstants.EDIT_PROFILE_SCREEN.name)
+                        }
+                    )
                     SettingOptions(
                         icon = R.drawable.ic_bookmarked,
                         text = "Bookmarks",
@@ -224,7 +245,7 @@ fun SettingsScreen(navController: NavHostController, authViewModel: AuthViewMode
                         Button(
                             onClick = {
                                 showDialog = false
-                                navController.navigate(NavConstants.DELETE_ACCOUNT_SCREEN.name){
+                                navController.navigate(NavConstants.DELETE_ACCOUNT_SCREEN.name) {
                                     launchSingleTop = true
                                 }
                             },
